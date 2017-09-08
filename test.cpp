@@ -1,6 +1,7 @@
 #include <deque>
 #include <vector>
 #include <iterator>
+#include <functional>
 #include <iostream>
 #include "gtest/gtest.h"
 
@@ -19,14 +20,27 @@ auto values(T & begin, T & end){
   };
 };
 
-TEST(CanCallValues, values) {
-  vector<int> deq;
-  deq.push_back(1);
-  deq.push_back(2);
-  auto begin = deq.begin(); //these are on the stack and are destroyed when the function ends.
-  auto end = deq.end();
+template <typename T>
+auto sink(auto read){
 
-  ASSERT_EQ(deq.size(), 2);    
+  std::function<void (bool, T)> more = [&](bool done, T val){
+    if(!done){
+      cout << val << endl; 
+      read(false, more);
+    } 
+  };
+
+  read(false, more);
+}
+
+TEST(CanCallValues, values) {
+  vector<int> vec;
+  vec.push_back(1);
+  vec.push_back(2);
+  auto begin = vec.begin(); //these are on the stack and are destroyed when the function ends.
+  auto end = vec.end();
+
+  ASSERT_EQ(vec.size(), 2);    
 
   auto vals = values(begin, end);
 
@@ -43,4 +57,15 @@ TEST(CanCallValues, values) {
   vals(false, [](bool done, auto val){
     ASSERT_TRUE(done);    
   });
+}
+
+TEST(SinkPrints, sink){
+  vector<int> vec;
+  vec.push_back(1);
+  vec.push_back(2);
+  auto begin = vec.begin(); //these are on the stack and are destroyed when the function ends.
+  auto end = vec.end();
+  auto sauce = values(begin, end);
+
+  sink<int>(sauce);
 }
