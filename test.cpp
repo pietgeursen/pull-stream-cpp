@@ -15,7 +15,7 @@ auto values(T & begin, T & end){
       cb(false, *begin++);
     }
     else{
-      cb(true, NULL);
+      cb(true, *begin);
     }
   };
 };
