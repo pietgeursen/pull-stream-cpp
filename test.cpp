@@ -12,7 +12,6 @@ auto values(T & begin, T & end){
   return [&](bool abort, auto cb){
 
     if(begin != end){
-      cout << *begin << endl;
       cb(false, *begin++);
     }
     else{
@@ -22,12 +21,11 @@ auto values(T & begin, T & end){
 };
 
 template <typename T>
-auto Map(auto mapper){
+auto Map(auto & mapper){
 
-  return [&](auto read){
+  return [&](auto & read){
     return [&](bool abort, auto cb){
       read(abort, [&](bool end, T val){
-        cout << "log from Map: " <<  val << endl;
         if(end)
           cb(true, val);
         else
@@ -69,6 +67,7 @@ TEST(SinkPrints, log){
 
   log<int>(sauce);
 }
+
 TEST(CanCallValues, values) {
   vector<int> vec;
   vec.push_back(1);
@@ -102,9 +101,9 @@ TEST(CanMapValues, Map) {
   auto begin = vec.begin(); //these are on the stack and are destroyed when the function ends.
   auto end = vec.end();
   auto vals = values(begin, end);
+  auto mapper = [&](int val){return val * 2;};
 
-  auto timesTwo = Map<int>([](int val){return val * 2;});
-
+  auto timesTwo = Map<int>(mapper);
   auto doubled = timesTwo(vals);
 
   doubled(false, [](bool done, auto val){
