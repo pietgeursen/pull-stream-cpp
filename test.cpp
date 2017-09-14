@@ -3,6 +3,7 @@
 #include <iterator>
 #include <functional>
 #include <iostream>
+#include <cstdarg>
 #include "gtest/gtest.h"
 
 using namespace std;
@@ -35,13 +36,6 @@ auto Map(auto & mapper){
   };
 
 }
-//module.exports = function map (mapper) {
-//  return function sink (read) {
-//    return function source (abort, cb) {
-//      ...
-//    }
-//  }
-//}
 
 template <typename T>
 auto log(auto read){
@@ -56,16 +50,52 @@ auto log(auto read){
   read(false, more);
 }
 
+template <typename T, typename... Targs>
+auto pull(auto & source, T & sink, Targs... Fargs){
+  return pull(sink, Fargs...)(source);
+}
 
-TEST(SinkPrints, log){
+auto pull(auto & stream){
+  return stream;
+}
+
+TEST(returnsSourceWhenNumArgsIsOne, pull) {
+
   vector<int> vec;
   vec.push_back(1);
   vec.push_back(2);
   auto begin = vec.begin(); //these are on the stack and are destroyed when the function ends.
   auto end = vec.end();
-  auto sauce = values(begin, end);
 
-  log<int>(sauce);
+  auto vals = values(begin, end);
+
+  auto newVals = pull(vals);
+
+  vals(false, [](bool done, auto val){
+    ASSERT_EQ(val, 1);    
+    ASSERT_FALSE(done);    
+  });
+}
+
+TEST(combinesSourceWithThrough, pull) {
+
+  vector<int> vec;
+  vec.push_back(1);
+  vec.push_back(2);
+  auto begin = vec.begin(); //these are on the stack and are destroyed when the function ends.
+  auto end = vec.end();
+
+  auto vals = values(begin, end);
+
+  auto mapper = [&](int val){return val * 2;};
+  auto timesTwo = Map<int>(mapper);
+
+  auto newVals = pull(vals, timesTwo);
+
+  newVals(false, [](bool done, auto val){
+    ASSERT_EQ(val, 2);    
+    ASSERT_FALSE(done);    
+  });
 }
 
 TEST(CanCallValues, values) {
